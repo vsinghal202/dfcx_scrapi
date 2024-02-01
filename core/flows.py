@@ -44,6 +44,7 @@ class Flows(scrapi_base.ScrapiBase):
         scope=False,
         flow_id: str = None,
         agent_id: str = None,
+        language_code: str = "en",
     ):
         super().__init__(
             creds_path=creds_path,
@@ -51,7 +52,7 @@ class Flows(scrapi_base.ScrapiBase):
             creds=creds,
             scope=scope,
         )
-
+        self.language_code = language_code
         if flow_id:
             self.flow_id = flow_id
 
@@ -191,7 +192,7 @@ class Flows(scrapi_base.ScrapiBase):
         return response
 
     @scrapi_base.api_call_counter_decorator
-    def list_flows(self, agent_id: str = None) -> List[types.Flow]:
+    def list_flows(self, agent_id: str, language_code: str) -> List[types.Flow]:
         """Get a List of all Flows in the current Agent.
 
         Args:
@@ -203,10 +204,11 @@ class Flows(scrapi_base.ScrapiBase):
         """
         if not agent_id:
             agent_id = self.agent_id
-
+        if not language_code:
+            language_code = self.language_code
         request = types.flow.ListFlowsRequest()
         request.parent = agent_id
-
+        request.language_code = self.language_code
         client_options = self._set_region(agent_id)
         client = services.flows.FlowsClient(
             credentials=self.creds, client_options=client_options
@@ -219,7 +221,9 @@ class Flows(scrapi_base.ScrapiBase):
                 flows.append(flow)
         return flows
 
-    def get_flow_by_display_name(self, display_name: str, agent_id: str) -> types.Flow:
+    def get_flow_by_display_name(
+        self, display_name: str, agent_id: str, language_code: str
+    ) -> types.Flow:
         """Get a single CX Flow object based on its display name.
 
         Args:
@@ -230,6 +234,8 @@ class Flows(scrapi_base.ScrapiBase):
           A single CX Flow object
         """
 
+        if language_code == None:
+            language_code = self.langauge_code
         flows_map = self.get_flows_map(agent_id=agent_id, reverse=True)
 
         if display_name in flows_map:
@@ -239,12 +245,12 @@ class Flows(scrapi_base.ScrapiBase):
                 f'Flow "{display_name}" ' f"does not exist in the specified agent."
             )
 
-        flow = self.get_flow(flow_id=flow_id)
+        flow = self.get_flow(flow_id=flow_id, language_code=language_code)
 
         return flow
 
     @scrapi_base.api_call_counter_decorator
-    def get_flow(self, flow_id: str) -> types.Flow:
+    def get_flow(self, flow_id: str, language_code: str = None) -> types.Flow:
         """Get a single CX Flow object.
 
         Args:
@@ -253,12 +259,17 @@ class Flows(scrapi_base.ScrapiBase):
         Returns:
           A single CX Flow object
         """
+        if language_code == None:
+            language_code = self.langauge_code
 
         client_options = self._set_region(flow_id)
+        request = types.flow.GetFlowRequest()
+        request.name = flow_id
+        request.language_code = self.language_code
         client = services.flows.FlowsClient(
             credentials=self.creds, client_options=client_options
         )
-        response = client.get_flow(name=flow_id)
+        response = client.get_flow(request)
 
         return response
 
@@ -267,7 +278,7 @@ class Flows(scrapi_base.ScrapiBase):
         self,
         agent_id: str,
         display_name: str = None,
-        language_code: str = "en",
+        language_code: str = None,
         obj: types.Flow = None,
         **kwargs,
     ):
@@ -285,6 +296,8 @@ class Flows(scrapi_base.ScrapiBase):
         Returns:
           The newly created CX Flow resource object.
         """
+        if language_code == None:
+            language_code = self.langauge_code
         request = types.flow.CreateFlowRequest()
         request.parent = agent_id
         request.language_code = language_code
