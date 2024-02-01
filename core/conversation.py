@@ -35,9 +35,7 @@ from dfcx_scrapi.core import scrapi_base
 from dfcx_scrapi.core import flows
 from dfcx_scrapi.core import pages
 
-logging.basicConfig(
-    format="[dfcx] %(levelname)s:%(message)s", level=logging.INFO
-)
+logging.basicConfig(format="[dfcx] %(levelname)s:%(message)s", level=logging.INFO)
 
 MAX_RETRIES = 3
 
@@ -56,7 +54,6 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
         agent_id: str = None,
         language_code: str = "en",
     ):
-
         super().__init__(
             creds_path=creds_path,
             creds_dict=creds_dict,
@@ -66,7 +63,9 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
 
         logging.debug(
             "create conversation with creds_path: %s | agent_id: %s",
-            creds_path, agent_id)
+            creds_path,
+            agent_id,
+        )
 
         self.agent_id = self._set_agent_id(agent_id, config)
         self.language_code = self._set_language_code(language_code, config)
@@ -76,8 +75,8 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
         self.turn_count = None
         self.agent_env = {}  # empty
         self.restart()
-        self.flows = flows.Flows(creds=self.creds)
-        self.pages = pages.Pages(creds=self.creds)
+        self.flows = flows.Flows(creds=self.creds, language_code=self.language_code)
+        self.pages = pages.Pages(creds=self.creds, language_code=self.language_code)
 
     @staticmethod
     def _set_language_code(language_code: str, config: Dict[str, Any]) -> str:
@@ -133,7 +132,7 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
             5: "NO_INPUT",
             6: "EVENT",
             8: "KNOWLEDGE_CONNECTOR",
-            9: "LLM"
+            9: "LLM",
         }
 
         return match_type_map[match_type]
@@ -162,7 +161,7 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
         spaces = " " * (bar_length - len(arrow))
         logging.info(
             f"{type_}({current}/{total})" + f"[{arrow}{spaces}] {percent:.2f}%"
-            )
+        )
 
     @staticmethod
     def _build_query_params_object(parameters, current_page, disable_webhook):
@@ -221,7 +220,6 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
 
     @staticmethod
     def _gather_text_responses(text_message):
-
         flat_texts = "\n".join(text_message.text)
 
         return flat_texts
@@ -230,9 +228,7 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
         rm_gathered = []
         for msg in response_messages:
             if msg.payload:
-                msg = {
-                    "payload": self.recurse_proto_marshal_to_dict(msg.payload)
-                }
+                msg = {"payload": self.recurse_proto_marshal_to_dict(msg.payload)}
 
             elif msg.play_audio:
                 msg = {"play_audio": {"audio_uri": msg.play_audio.audio_uri}}
@@ -287,7 +283,6 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
         agent_pages_map = pd.DataFrame()
         flow_map = self.flows.get_flows_map(agent_id=self.agent_id)
         for flow_id in flow_map.keys():
-
             page_map = self.pages.get_pages_map(flow_id=flow_id)
 
             flow_mapped = pd.DataFrame.from_dict(page_map, orient="index")
@@ -340,7 +335,7 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
         threads = [None] * len(utterances)
         results = {
             "target_page": [None] * len(utterances),
-            "match":[None] * len(utterances),
+            "match": [None] * len(utterances),
         }
         for i, (utterance, page_id) in enumerate(zip(utterances, page_ids)):
             threads[i] = Thread(
@@ -358,7 +353,6 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
         intent_detection = test_set_mapped.copy()
 
         return intent_detection
-
 
     def restart(self):
         """Starts a new session/conversation for this agent"""
@@ -419,9 +413,7 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
             logging.warning(f"Input Text is empty. {send_obj}")
 
         if text and len(text) > 256:
-            logging.warning(
-                "Text input is too long. Truncating to 256 characters."
-            )
+            logging.warning("Text input is too long. Truncating to 256 characters.")
             text = text[0:256]
             logging.warning(f"TRUNCATED TEXT: {text}")
 
@@ -453,9 +445,7 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
         )
 
         # Build Query Input object
-        query_input = self._build_query_input_object(
-            send_obj, self.language_code
-        )
+        query_input = self._build_query_input_object(send_obj, self.language_code)
 
         request = types.session.DetectIntentRequest(
             session=session_path,
@@ -480,9 +470,7 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
             return {}
 
         except core_exceptions.ClientError as err:
-            logging.error(
-                "---- ERROR ---- ClientError caught on CX.detect %s", err
-            )
+            logging.error("---- ERROR ---- ClientError caught on CX.detect %s", err)
             template = "An exception of type {0} occurred. \nArguments:\n{1!r}"
             message = template.format(type(err).__name__, err.args)
             logging.error("err name %s", message)
@@ -516,9 +504,7 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
 
         # Convert params structures from Proto to standard python data types
         if query_result.parameters:
-            params = self._gather_query_result_parameters(
-                query_result.parameters
-            )
+            params = self._gather_query_result_parameters(query_result.parameters)
         else:
             params = None
 
@@ -606,7 +592,7 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
         return result
 
     def _unpack_match(self, df: pd.DataFrame):
-        """ Unpacks a 'match' column into four component columns.
+        """Unpacks a 'match' column into four component columns.
 
         Args:
           df: dataframe containing a column named match of types.Match
@@ -616,22 +602,19 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
             and detected_intent instead of match.
         """
         df = (
-            df
-            .copy()
+            df.copy()
             .assign(
-                match_type = lambda df: df.match.apply(
-                    attrgetter("match_type._name_")),
-                confidence = lambda df: df.match.apply(
-                    attrgetter("confidence")),
-                parameters_set = lambda df: df.match.apply(
-                    attrgetter("parameters")),
-                detected_intent = lambda df: df.match.apply(
-                    attrgetter("intent.display_name"))
+                match_type=lambda df: df.match.apply(attrgetter("match_type._name_")),
+                confidence=lambda df: df.match.apply(attrgetter("confidence")),
+                parameters_set=lambda df: df.match.apply(attrgetter("parameters")),
+                detected_intent=lambda df: df.match.apply(
+                    attrgetter("intent.display_name")
+                ),
             )
             .assign(
-                parameters_set = lambda df: df.parameters_set.apply(
-                    lambda p: self.recurse_proto_marshal_to_dict(
-                        p) if p else "")
+                parameters_set=lambda df: df.parameters_set.apply(
+                    lambda p: self.recurse_proto_marshal_to_dict(p) if p else ""
+                )
             )
             .drop(columns="match")
         )
