@@ -192,7 +192,7 @@ class Flows(scrapi_base.ScrapiBase):
         return response
 
     @scrapi_base.api_call_counter_decorator
-    def list_flows(self, agent_id: str, language_code: str) -> List[types.Flow]:
+    def list_flows(self, agent_id: str, language_code: str = None) -> List[types.Flow]:
         """Get a List of all Flows in the current Agent.
 
         Args:
