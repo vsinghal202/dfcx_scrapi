@@ -43,7 +43,7 @@ class EntityTypes(scrapi_base.ScrapiBase):
         scope=False,
         entity_id: str = None,
         agent_id: str = None,
-        language_code: str = "en"
+        language_code: str = "en",
     ):
         super().__init__(
             creds_path=creds_path,
@@ -56,11 +56,8 @@ class EntityTypes(scrapi_base.ScrapiBase):
         self.agent_id = agent_id
         self.language_code = language_code
 
-
     @staticmethod
-    def entity_type_proto_to_dataframe(
-        obj: types.EntityType, mode: str = "basic"
-    ):
+    def entity_type_proto_to_dataframe(obj: types.EntityType, mode: str = "basic"):
         """Converts an EntityType protobuf object to a Pandas Dataframe.
 
         Args:
@@ -94,13 +91,11 @@ class EntityTypes(scrapi_base.ScrapiBase):
                 for synonym in entity.synonyms:
                     entity_type_dict["synonyms"] = synonym
                     entity_type_df = pd.DataFrame(entity_type_dict, index=[0])
-                    main_df = pd.concat([main_df, entity_type_df],
-                                        ignore_index=True)
+                    main_df = pd.concat([main_df, entity_type_df], ignore_index=True)
 
             return main_df
 
         elif mode == "advanced":
-
             main_df = pd.DataFrame()
             excl_phrases_df = pd.DataFrame()
 
@@ -121,19 +116,16 @@ class EntityTypes(scrapi_base.ScrapiBase):
                 for synonym in entity.synonyms:
                     entity_type_dict["synonyms"] = synonym
                     entity_type_df = pd.DataFrame(entity_type_dict, index=[0])
-                    main_df = pd.concat([main_df, entity_type_df],
-                                        ignore_index=True)
+                    main_df = pd.concat([main_df, entity_type_df], ignore_index=True)
 
             for excluded_phrase in obj.excluded_phrases:
                 excl_phrases_dict["excluded_phrase"] = excluded_phrase.value
-                excl_phrases_dict2df = pd.DataFrame(
-                                          excl_phrases_dict, index=[0])
-                excl_phrases_df = pd.concat([excl_phrases_df,
-                                     excl_phrases_dict2df], ignore_index=True)
+                excl_phrases_dict2df = pd.DataFrame(excl_phrases_dict, index=[0])
+                excl_phrases_df = pd.concat(
+                    [excl_phrases_df, excl_phrases_dict2df], ignore_index=True
+                )
 
-            return {
-                "entity_types": main_df, "excluded_phrases": excl_phrases_df
-            }
+            return {"entity_types": main_df, "excluded_phrases": excl_phrases_df}
 
         else:
             raise ValueError("Mode types: [basic, advanced]")
@@ -142,7 +134,9 @@ class EntityTypes(scrapi_base.ScrapiBase):
         self,
         agent_id: str = None,
         mode: str = "basic",
-        entity_type_subset: List[str] = None) -> pd.DataFrame:
+        entity_type_subset: List[str] = None,
+    ) -> pd.DataFrame:
+        language_code: str = None
         """Extracts all Entity Types into a Pandas DataFrame.
 
         Args:
@@ -171,51 +165,42 @@ class EntityTypes(scrapi_base.ScrapiBase):
 
         if not agent_id:
             agent_id = self.agent_id
-
-        entity_types = self.list_entity_types(agent_id)
+        if not language_code:
+            language_code = self.language_code
+        entity_types = self.list_entity_types(agent_id, language_code)
         if mode == "basic":
             main_df = pd.DataFrame()
             for obj in entity_types:
-                if (entity_type_subset and
-                        obj.display_name not in entity_type_subset):
+                if entity_type_subset and obj.display_name not in entity_type_subset:
                     continue
 
-                single_entity_df = self.entity_type_proto_to_dataframe(
-                    obj, mode=mode
-                )
+                single_entity_df = self.entity_type_proto_to_dataframe(obj, mode=mode)
                 main_df = pd.concat([main_df, single_entity_df])
-            main_df = main_df.sort_values(
-                ["display_name", "entity_value"])
+            main_df = main_df.sort_values(["display_name", "entity_value"])
             return main_df
 
         elif mode == "advanced":
             main_df = pd.DataFrame()
             excl_phrases_df = pd.DataFrame()
             for obj in entity_types:
-                if (entity_type_subset and
-                        obj.display_name not in entity_type_subset):
+                if entity_type_subset and obj.display_name not in entity_type_subset:
                     continue
-                single_entity_dict = self.entity_type_proto_to_dataframe(
-                    obj, mode=mode
-                )
-                main_df = pd.concat(
-                    [main_df, single_entity_dict["entity_types"]])
+                single_entity_dict = self.entity_type_proto_to_dataframe(obj, mode=mode)
+                main_df = pd.concat([main_df, single_entity_dict["entity_types"]])
                 excl_phrases_df = pd.concat(
-                    [excl_phrases_df, single_entity_dict["excluded_phrases"]])
+                    [excl_phrases_df, single_entity_dict["excluded_phrases"]]
+                )
             type_map = {
                 "auto_expansion_mode": bool,
                 "fuzzy_extraction": bool,
-                "redact": bool
+                "redact": bool,
             }
             main_df = main_df.astype(type_map)
 
-            return {
-                "entity_types": main_df, "excluded_phrases": excl_phrases_df
-            }
+            return {"entity_types": main_df, "excluded_phrases": excl_phrases_df}
 
         else:
             raise ValueError("Mode types: [basic, advanced]")
-
 
     def get_entities_map(self, agent_id: str = None, reverse=False):
         """Exports Agent Entity Type Names and UUIDs into a user friendly dict.
@@ -246,7 +231,7 @@ class EntityTypes(scrapi_base.ScrapiBase):
         return entities_dict
 
     @scrapi_base.api_call_counter_decorator
-    def list_entity_types(self, agent_id: str, language_code: str = "en"):
+    def list_entity_types(self, agent_id: str, language_code: str = None):
         """Returns a list of Entity Type objects.
 
         Args:
@@ -258,7 +243,8 @@ class EntityTypes(scrapi_base.ScrapiBase):
         """
         if not agent_id:
             agent_id = self.agent_id
-
+        if not language_code:
+            agent_id = self.language_code
         request = types.entity_type.ListEntityTypesRequest()
         request.parent = agent_id
         request.language_code = language_code
@@ -334,13 +320,8 @@ class EntityTypes(scrapi_base.ScrapiBase):
             entity_type_obj.name = ""
         else:
             if not display_name:
-                raise ValueError(
-                    "At least display_name or obj should be specified."
-                )
-            entity_type_obj = types.EntityType(
-                display_name=display_name,
-                kind=1
-            )
+                raise ValueError("At least display_name or obj should be specified.")
+            entity_type_obj = types.EntityType(display_name=display_name, kind=1)
 
             # set optional arguments to entity type attributes
             for key, value in kwargs.items():
@@ -359,9 +340,7 @@ class EntityTypes(scrapi_base.ScrapiBase):
         if language_code:
             request.language_code = language_code
 
-        response = client.create_entity_type(
-            request=request
-        )
+        response = client.create_entity_type(request=request)
 
         return response
 
@@ -371,7 +350,8 @@ class EntityTypes(scrapi_base.ScrapiBase):
         entity_type_id: str = None,
         obj: types.EntityType = None,
         language_code: str = None,
-        **kwargs):
+        **kwargs
+    ):
         """Update a single CX Entity Type object.
 
         Pass in a the Entity Type ID and the specified kwargs for the
@@ -422,8 +402,7 @@ class EntityTypes(scrapi_base.ScrapiBase):
 
     @scrapi_base.api_call_counter_decorator
     def delete_entity_type(
-        self, entity_id: str = None,
-        obj: types.EntityType = None, force: bool = False
+        self, entity_id: str = None, obj: types.EntityType = None, force: bool = False
     ):
         """Deletes a single Entity Type resource object.
 
@@ -444,6 +423,7 @@ class EntityTypes(scrapi_base.ScrapiBase):
 
         client_options = self._set_region(entity_id)
         client = services.entity_types.EntityTypesClient(
-            credentials=self.creds, client_options=client_options)
+            credentials=self.creds, client_options=client_options
+        )
         req = types.DeleteEntityTypeRequest(name=entity_id, force=force)
         client.delete_entity_type(request=req)
