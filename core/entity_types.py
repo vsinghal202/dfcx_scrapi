@@ -135,8 +135,8 @@ class EntityTypes(scrapi_base.ScrapiBase):
         agent_id: str = None,
         mode: str = "basic",
         entity_type_subset: List[str] = None,
+        language_code: str = None,
     ) -> pd.DataFrame:
-        language_code: str = None
         """Extracts all Entity Types into a Pandas DataFrame.
 
         Args:
