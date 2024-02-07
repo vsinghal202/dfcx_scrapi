@@ -604,7 +604,7 @@ class DialogflowConversation(scrapi_base.ScrapiBase):
         df = (
             df.copy()
             .assign(
-                match_type=lambda df: df.match.apply(attrgetter("match_type._name_")),
+                match_type=lambda df: df.match.apply(attrgetter("match_type")),
                 confidence=lambda df: df.match.apply(attrgetter("confidence")),
                 parameters_set=lambda df: df.match.apply(attrgetter("parameters")),
                 detected_intent=lambda df: df.match.apply(

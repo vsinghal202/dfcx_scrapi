@@ -345,7 +345,7 @@ class EntityTypes(scrapi_base.ScrapiBase):
         return response
 
     @scrapi_base.api_call_counter_decorator
-    def update_entity_type(
+    def teupdate_entity_type(
         self,
         entity_type_id: str = None,
         obj: types.EntityType = None,

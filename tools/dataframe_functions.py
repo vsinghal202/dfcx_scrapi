@@ -47,6 +47,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+
 class DataframeFunctions(ScrapiBase):
     """Class that supports dataframe functions in DFCX."""
 
@@ -104,8 +105,7 @@ class DataframeFunctions(ScrapiBase):
         percent = float(current) * 100 / total
         arrow = "-" * int(percent / 100 * bar_length - 1) + ">"
         spaces = " " * (bar_length - len(arrow))
-        print(f"{type_}({current}/{total})" + f"[{arrow}{spaces}] {percent}%",
-          end="\r")
+        print(f"{type_}({current}/{total})" + f"[{arrow}{spaces}] {percent}%", end="\r")
 
     @staticmethod
     def _coerce_to_string(dataframe: pd.DataFrame, fields: List[str]):
@@ -220,9 +220,7 @@ class DataframeFunctions(ScrapiBase):
 
                 if not params.empty:
                     params = params[["id", "entity_type"]]
-                    params = self._coerce_to_string(
-                        params, ["id", "entity_type"]
-                    )
+                    params = self._coerce_to_string(params, ["id", "entity_type"])
 
             else:
                 tp_schema = self._make_schema(
@@ -269,7 +267,7 @@ class DataframeFunctions(ScrapiBase):
                     part = {
                         "text": row["text"],
                         "parameter_id": None if pd.isna(param_id) else param_id,
-                }
+                    }
                     parts.append(part)
 
                 training_phrase = {"parts": parts, "repeat_count": 1, "id": ""}
@@ -312,7 +310,7 @@ class DataframeFunctions(ScrapiBase):
         mode: str = "basic",
         update_flag: bool = False,
         rate_limiter: int = 5,
-        language_code: str = None
+        language_code: str = None,
     ):
         """Update existing Intent, TPs and Parameters from a Dataframe.
 
@@ -380,7 +378,6 @@ class DataframeFunctions(ScrapiBase):
                     ]
                 ]
 
-
                 tp_df = self._coerce_to_string(
                     tp_df, ["display_name", "text", "parameter_id"]
                 )
@@ -436,9 +433,7 @@ class DataframeFunctions(ScrapiBase):
         else:
             raise ValueError("mode must be basic or advanced")
 
-        intents_map = self.intents.get_intents_map(
-            agent_id=agent_id, reverse=True
-        )
+        intents_map = self.intents.get_intents_map(agent_id=agent_id, reverse=True)
 
         intent_names = list(set(tp_df["display_name"]))
 
@@ -459,9 +454,7 @@ class DataframeFunctions(ScrapiBase):
                 ].drop(columns="display_name")
 
             if intent_name not in intents_map.keys():
-                logging.error(
-                    "FAIL to update - intent not found: [%s]", intent_name
-                )
+                logging.error("FAIL to update - intent not found: [%s]", intent_name)
                 continue
 
             new_intent = self._update_intent_from_dataframe(
@@ -477,7 +470,7 @@ class DataframeFunctions(ScrapiBase):
                 self.intents.update_intent(
                     intent_id=new_intent.name,
                     obj=new_intent,
-                    language_code=language_code
+                    language_code=language_code,
                 )
                 time.sleep(rate_limiter)
 
@@ -526,12 +519,9 @@ class DataframeFunctions(ScrapiBase):
 
         elif mode == "advanced":
             if all(
-                k in tp_df
-                for k in ["training_phrase", "part", "text", "parameter_id"]
+                k in tp_df for k in ["training_phrase", "part", "text", "parameter_id"]
             ):
-                tp_df = tp_df[
-                    ["training_phrase", "part", "text", "parameter_id"]
-                ]
+                tp_df = tp_df[["training_phrase", "part", "text", "parameter_id"]]
                 tp_df = self._coerce_to_string(tp_df, ["text", "parameter_id"])
                 tp_df = self._coerce_to_int(tp_df, ["training_phrase", "part"])
 
@@ -581,9 +571,7 @@ class DataframeFunctions(ScrapiBase):
         if mode == "advanced":
             training_phrases = []
             for phrase in list(set(tp_df["training_phrase"])):
-                tp_parts = tp_df[
-                    tp_df["training_phrase"].astype(int) == int(phrase)
-                ]
+                tp_parts = tp_df[tp_df["training_phrase"].astype(int) == int(phrase)]
                 parts = []
                 for _, row in tp_parts.iterrows():
                     param_id = row["parameter_id"]
@@ -667,15 +655,13 @@ class DataframeFunctions(ScrapiBase):
                 tp_df = self._coerce_to_string(tp_df, ["display_name", "text"])
 
             else:
-                tp_schema = self._make_schema(
-                    ["display_name", "text", "parameter_id"]
-                )
+                tp_schema = self._make_schema(["display_name", "text", "parameter_id"])
 
                 schema_error = tabulate(
-                        tp_schema.transpose(),
-                        headers="keys",
-                        tablefmt="psql",
-                    )
+                    tp_schema.transpose(),
+                    headers="keys",
+                    tablefmt="psql",
+                )
 
                 raise ValueError(
                     f"{mode} mode train_phrases schema must be {schema_error}"
@@ -727,22 +713,20 @@ class DataframeFunctions(ScrapiBase):
                     ]
                 )
 
-                p_schema = self._make_schema(
-                    ["display_name", "id", "entity_type"]
-                )
+                p_schema = self._make_schema(["display_name", "id", "entity_type"])
 
                 tp_schema_error = tabulate(
-                        tp_schema.transpose(),
-                        headers="keys",
-                        tablefmt="psql",
-                    )
+                    tp_schema.transpose(),
+                    headers="keys",
+                    tablefmt="psql",
+                )
                 p_schema_error = tabulate(
-                        p_schema.transpose(),
-                        headers="keys",
-                        tablefmt="psql",
-                    )
+                    p_schema.transpose(),
+                    headers="keys",
+                    tablefmt="psql",
+                )
                 raise ValueError(
-                    f"{mode} mode train_phrases schema must be "\
+                    f"{mode} mode train_phrases schema must be "
                     f"{tp_schema_error} \n parameter schema must be "
                     f"{p_schema_error}"
                 )
@@ -759,9 +743,9 @@ class DataframeFunctions(ScrapiBase):
             )
             params = pd.DataFrame()
             if mode == "advanced":
-                params = params_df.copy()[
-                    params_df["display_name"] == intent
-                ].drop(columns="display_name")
+                params = params_df.copy()[params_df["display_name"] == intent].drop(
+                    columns="display_name"
+                )
 
             new_intent = self._create_intent_from_dataframe(
                 display_name=intent,
@@ -775,8 +759,9 @@ class DataframeFunctions(ScrapiBase):
             self.progress_bar(i, len(temp_intents))
             if update_flag:
                 time.sleep(rate_limiter)
-                self.intents.create_intent(agent_id=agent_id, obj=new_intent,
-                    language_code=language_code)
+                self.intents.create_intent(
+                    agent_id=agent_id, obj=new_intent, language_code=language_code
+                )
 
         return new_intents
 
@@ -821,9 +806,12 @@ class DataframeFunctions(ScrapiBase):
         return entity_pb
 
     def bulk_create_entity_from_dataframe(
-        self, agent_id, entities_df, update_flag=False,
-        language_code: str = None, rate_limiter=5,
-
+        self,
+        agent_id,
+        entities_df,
+        update_flag=False,
+        language_code: str = None,
+        rate_limiter=5,
     ):
         """Bulk create entities from a dataframe.
 
@@ -876,14 +864,17 @@ class DataframeFunctions(ScrapiBase):
                 time.sleep(rate_limiter)
 
             self.progress_bar(
-                i, len(list(set(
-                    entities_df["display_name"]))), type_="entities"
+                i, len(list(set(entities_df["display_name"]))), type_="entities"
             )
         return custom_entities
 
     def bulk_update_entity_from_dataframe(
-        self, entities_df, update_flag=False, language_code=None,
-        rate_limiter=5
+        self,
+        agent_id,
+        entities_df,
+        update_flag=False,
+        language_code=None,
+        rate_limiter=5,
     ):
         """Bulk updates entities from a dataframe.
 
@@ -934,8 +925,7 @@ class DataframeFunctions(ScrapiBase):
                 time.sleep(rate_limiter)
 
             self.progress_bar(
-                i, len(list(set(
-                    entities_df["display_name"]))), type_="entities"
+                i, len(list(set(entities_df["display_name"]))), type_="entities"
             )
 
         return custom_entities
@@ -990,8 +980,7 @@ class DataframeFunctions(ScrapiBase):
 
         # custom payloads and text
         payload = {
-            "messages": custom_payload_list
-            + [{"text": {"text": fulfillment_text}}]
+            "messages": custom_payload_list + [{"text": {"text": fulfillment_text}}]
         }
 
         payload_json = json.dumps(payload)
@@ -1044,17 +1033,13 @@ class DataframeFunctions(ScrapiBase):
           The created route group protobuf object
         """
         if "intent" in route_group_df.columns:
-            intents_map = self.intents.get_intents_map(
-                agent_id=agent_id, reverse=True
-            )
+            intents_map = self.intents.get_intents_map(agent_id=agent_id, reverse=True)
             route_group_df["intent"] = route_group_df.apply(
                 lambda x: intents_map[x["intent"]], axis=1
             )
 
         if "target_flow" in route_group_df.columns:
-            flows_map = self.flows.get_flows_map(
-                agent_id=agent_id, reverse=True
-            )
+            flows_map = self.flows.get_flows_map(agent_id=agent_id, reverse=True)
             route_group_df["target_flow"] = route_group_df.apply(
                 lambda x: flows_map[x["target_flow"]], axis=1
             )
